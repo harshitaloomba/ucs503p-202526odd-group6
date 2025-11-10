@@ -150,7 +150,15 @@ export default function PracticePage() {
 									</div>
 								</div>
 								<button
-									onClick={() => alert("Joining OA (demo)")}
+									onClick={async () => {
+										try {
+											await API.post("/oa/end");
+											window.location.reload();
+										} catch (err) {
+											console.error("Failed to end OA", err);
+											alert("Failed to end OA. Please try again.");
+										}
+									}}
 									className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded font-semibold shadow-md"
 								>
 									End OA

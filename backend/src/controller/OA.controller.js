@@ -88,14 +88,19 @@ const createOA = asyncHandler(async (req, res) => {
 });
 
 const endOA = asyncHandler(async (req, res) => {
+  // console.log("pinged");
+  
   const userId = req.user._id;
   const oa = await OA.findOne({ user: userId, status: "active" }).populate("questions.question");
   if (!oa) {
     return res.status(204).json({ success: true, message: "No active OA found for this user.!" });
   }
+  // console.log(oa);
+  
 
-  oa.status = "expired";
+  oa.status = "cancelled";
   oa.endedAt = new Date();
+  console.log(oa);
   await oa.save();
   
   res.status(200).json( 

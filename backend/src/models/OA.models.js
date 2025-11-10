@@ -55,7 +55,7 @@ const OASchema = new mongoose.Schema(
 
     status: { 
       type: String, 
-      enum: ["active", "completed", "expired"], 
+      enum: ["active", "completed", "expired","cancelled"], 
       default: "active" 
     },
   },
