@@ -100,7 +100,7 @@ const endOA = asyncHandler(async (req, res) => {
 
   oa.status = "cancelled";
   oa.endedAt = new Date();
-  console.log(oa);
+  // console.log(oa);
   await oa.save();
   
   res.status(200).json( 
