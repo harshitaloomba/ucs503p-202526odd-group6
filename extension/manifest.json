@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Automatically tracks LeetCode submissions and sends them to backend.",
   "permissions": ["activeTab", "storage", "scripting"],
-  "host_permissions": ["https://localhost:4001/*"],
+  "host_permissions": ["https://ucs503p-202526odd-group6/*"],
   "content_scripts": [
     {
       "matches": ["*://leetcode.com/problems/*"],
