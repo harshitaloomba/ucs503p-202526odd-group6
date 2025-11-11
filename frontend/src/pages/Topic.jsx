@@ -8,6 +8,7 @@ import Selector from '../components/Topic_Company_wise/Selector';
 import FiltersAndSorting from '../components/Topic_Company_wise/FiltersAndSorting';
 import ProgressBar from '../components/Topic_Company_wise/ProgressBar';
 import QuestionCard from '../components/Topic_Company_wise/QuesCard';
+import AptitudeQuiz from '../components/Aptitude/AptitudeQuiz';
 import API from '../api/axios';
 import TcSkeleton from '../skeleton/tcSkeleton';
 
@@ -16,8 +17,9 @@ export default function Topic() {
   const [response, setResponse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [allQuestions, setAllQuestions] = useState([]);
+  const [mode, setMode] = useState('dsa'); // 'dsa' or 'aptitude'
 
-  const selectedTopic = searchParams.get('topic') || 'Array';
+  const selectedTopic = searchParams.get('topic') || (mode === 'dsa' ? 'Array' : null);
   const statusFilter = searchParams.get('status') || null;
   const difficultyFilter = searchParams.get('difficulty') || null;
 
@@ -173,55 +175,87 @@ export default function Topic() {
 
 
   return (
-    <div className="p-6 bg-[#0f0f1c] min-h-screen flex gap-6">
-      <div className="w-64 shrink-0">
-        <Selector
-          topics={topics}
-          selectedTopic={selectedTopic}
-          onSelect={(topic) => setParam('topic', topic)}
-        />
+    <div className="bg-[#0f0f1c] min-h-screen">
+      {/* Toggle Button */}
+      <div className="flex justify-center pt-4 pb-1">
+        <div className="inline-flex rounded-full bg-[#1a1b2e] p-0.5 border border-[#2b2b3e]">
+          <button
+            onClick={() => setMode('dsa')}
+            className={`px-6 py-1.5 rounded-full font-semibold text-sm transition-all duration-300 ${
+              mode === 'dsa'
+                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            DSA
+          </button>
+          <button
+            onClick={() => setMode('aptitude')}
+            className={`px-6 py-1.5 rounded-full font-semibold text-sm transition-all duration-300 ${
+              mode === 'aptitude'
+                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Aptitude
+          </button>
+        </div>
       </div>
 
-      { !loading && response ? (
-        
-        <div className="flex-1 mt-8">
-          <h1 className="text-3xl pl-2 font-bold text-white mb-6">{selectedTopic}</h1>
-
-          <ProgressBar
-            topic="Progress"
-            completed={response.solvedCount}
-            total={response.total}
-          />
-
-          <FiltersAndSorting
-            statusFilter={statusFilter}
-            setStatusFilter={(status) => setParam('status', status)}
-            difficultyFilter={difficultyFilter}
-            setDifficultyFilter={(difficulty) => setParam('difficulty', difficulty)}
-            onSelect={(topic) => setParam('topic', topic)}
-          />
-
-          <div className="mt-6 h-[70vh] overflow-y-auto flex flex-col gap-4 hide-scrollbar">
-            {Array.isArray(filteredQuestions) && filteredQuestions.length > 0 ? (
-              filteredQuestions.map((q) => (
-                <QuestionCard
-                  key={q.Qid}
-                  Qid={q.Qid}
-                  title={q.title}
-                  slug={q.slug}
-                  difficulty={q.difficulty}
-                  solved={q.solved}
-                  topics={q.topics}
-                  companyTags={q.companyTags}
-                />
-              ))
-            ): (
-              <p className="text-white">No questions found.</p>
-            )}
+      {mode === 'dsa' ? (
+        <div className="p-6 flex gap-6">
+          <div className="w-64 shrink-0">
+            <Selector
+              topics={topics}
+              selectedTopic={selectedTopic}
+              onSelect={(topic) => setParam('topic', topic)}
+            />
           </div>
+
+          { !loading && response ? (
+            
+            <div className="flex-1 mt-8">
+              <h1 className="text-3xl pl-2 font-bold text-white mb-6">{selectedTopic}</h1>
+
+              <ProgressBar
+                topic="Progress"
+                completed={response.solvedCount}
+                total={response.total}
+              />
+
+              <FiltersAndSorting
+                statusFilter={statusFilter}
+                setStatusFilter={(status) => setParam('status', status)}
+                difficultyFilter={difficultyFilter}
+                setDifficultyFilter={(difficulty) => setParam('difficulty', difficulty)}
+                onSelect={(topic) => setParam('topic', topic)}
+              />
+
+              <div className="mt-6 h-[70vh] overflow-y-auto flex flex-col gap-4 hide-scrollbar">
+                {Array.isArray(filteredQuestions) && filteredQuestions.length > 0 ? (
+                  filteredQuestions.map((q) => (
+                    <QuestionCard
+                      key={q.Qid}
+                      Qid={q.Qid}
+                      title={q.title}
+                      slug={q.slug}
+                      difficulty={q.difficulty}
+                      solved={q.solved}
+                      topics={q.topics}
+                      companyTags={q.companyTags}
+                    />
+                  ))
+                ): (
+                  <p className="text-white">No questions found.</p>
+                )}
+              </div>
+            </div>
+          ):(
+            <TcSkeleton />
+          )}
         </div>
-      ):(
-        <TcSkeleton />
+      ) : (
+        <AptitudeQuiz />
       )}
     </div>
   );

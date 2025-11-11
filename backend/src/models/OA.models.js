@@ -8,7 +8,36 @@ const OASchema = new mongoose.Schema(
       required: true 
     },
 
-    questions: [
+    // Aptitude section (30 mins, 25 questions)
+    aptitudeQuestions: [
+      {
+        question: { 
+          type: mongoose.Schema.Types.ObjectId, 
+          ref: "Apti", 
+          required: true 
+        },
+        selectedAnswer: { 
+          type: String, 
+          default: null 
+        },
+        isCorrect: { 
+          type: Boolean, 
+          default: null 
+        },
+        status: { 
+          type: String, 
+          enum: ["pending", "answered"], 
+          default: "pending" 
+        },
+        answeredOn: { 
+          type: Date, 
+          default: null 
+        },
+      },
+    ],
+
+    // DSA section (90 mins, 4 questions)
+    dsaQuestions: [
       {
         question: { 
           type: mongoose.Schema.Types.ObjectId, 
@@ -32,13 +61,40 @@ const OASchema = new mongoose.Schema(
       },
     ],
 
-    totalQuestions: { 
-      type: Number, 
-      default: 4, 
-      immutable: true 
+    // Section tracking
+    currentSection: {
+      type: String,
+      enum: ["aptitude", "dsa", "completed"],
+      default: "aptitude"
     },
 
-    completedCount: { 
+    aptitudeSectionEndTime: {
+      type: Date,
+      default: null
+    },
+
+    // Stats
+    totalAptitudeQuestions: { 
+      type: Number, 
+      default: 25 
+    },
+
+    aptitudeCorrect: { 
+      type: Number, 
+      default: 0 
+    },
+
+    aptitudeAttempted: { 
+      type: Number, 
+      default: 0 
+    },
+
+    totalDsaQuestions: { 
+      type: Number, 
+      default: 4 
+    },
+
+    dsaCompletedCount: { 
       type: Number, 
       default: 0 
     },
@@ -55,8 +111,8 @@ const OASchema = new mongoose.Schema(
 
     status: { 
       type: String, 
-      enum: ["active", "completed", "expired","cancelled"], 
-      default: "active" 
+      enum: ["ongoing", "completed", "aborted"], 
+      default: "ongoing" 
     },
   },
   { timestamps: true }

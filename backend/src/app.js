@@ -43,6 +43,8 @@ import contestRouter from "./routes/contest.routes.js";
 import topic_companyRouter from "./routes/topic_company.routes.js";
 import dailyRouter from "./routes/daily.routes.js";
 import OARouter from "./routes/OA.routes.js";
+import AptiRouter from "./routes/apti.routes.js";
+import adminRouter from "./routes/admin.routes.js";
 
 //routes decalaration
 app.use("/api/users", userRouter)
@@ -52,6 +54,8 @@ app.use("/api/contest", contestRouter)
 app.use("/api", topic_companyRouter)
 app.use("/api", dailyRouter)
 app.use("/api/oa", OARouter)
+app.use("/api/apti", AptiRouter)
+app.use("/api/admin", adminRouter)
 
 
 export { app }

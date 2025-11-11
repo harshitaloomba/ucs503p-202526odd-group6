@@ -52,6 +52,20 @@ const userSchema = new Schema(
                 }
             }
         ],
+        solvedApti: [
+            {
+                question: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'Apti',
+                    required: true
+                },
+                solvedOn: {
+                    type: Date,
+                    default: () => new Date(),
+                    required: true
+                }
+            }
+        ],
         lastSynced: {
             type: Date,
             default: null,

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import dayjs from "dayjs";
 import API from "../api/axios";
+import OASession from "../components/OA/OASession";
+import OAResults from "../components/OA/OAResults";
+import toast, { Toaster } from "react-hot-toast";
 
 // Practice page: fetch OA status and render accordingly
 export default function PracticePage() {
@@ -125,6 +128,7 @@ export default function PracticePage() {
 
 	return (
 		<div className="p-6 bg-[#0f0f1c] min-h-screen">
+			<Toaster position="top-right" reverseOrder={false} />
 			<div className="max-w-3xl mx-auto space-y-6">
 				{/* Banner */}
 				<div className="rounded-2xl bg-[#181825] text-white p-6 shadow-lg flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -134,8 +138,8 @@ export default function PracticePage() {
 						</h2>
 						<p className="mt-1 text-sm text-gray-300">
 							{activeOA
-								? "An OA is in progress — join to continue."
-								: "Start a fresh OA — you will get 4 curated questions and 90 minutes."}
+								? "An OA is in progress — continue your assessment."
+								: "Start a fresh OA — 25 aptitude questions (30 mins) + 4 DSA questions (90 mins)."}
 						</p>
 					</div>
 
@@ -151,12 +155,17 @@ export default function PracticePage() {
 								</div>
 								<button
 									onClick={async () => {
+										if (!window.confirm("Are you sure you want to abort this OA?")) return;
 										try {
+											toast.loading("Ending OA...");
 											await API.post("/oa/end");
-											window.location.reload();
+											toast.dismiss();
+											toast.success("OA ended");
+											setTimeout(() => window.location.reload(), 1000);
 										} catch (err) {
 											console.error("Failed to end OA", err);
-											alert("Failed to end OA. Please try again.");
+											toast.dismiss();
+											toast.error("Failed to end OA. Please try again.");
 										}
 									}}
 									className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded font-semibold shadow-md"
@@ -168,14 +177,18 @@ export default function PracticePage() {
 							<button
 								onClick={async () => {
 									try {
+										toast.loading("Creating OA...");
 										await API.post("/oa/create");
-										window.location.reload();
+										toast.dismiss();
+										toast.success("OA created! Redirecting...");
+										setTimeout(() => window.location.reload(), 1000);
 									} catch (err) {
 										console.error(
 											"Failed to start OA",
 											err
 										);
-										alert(
+										toast.dismiss();
+										toast.error(
 											"Failed to start OA. Please try again."
 										);
 									}
@@ -192,144 +205,32 @@ export default function PracticePage() {
 				{loading ? (
 					<div className="p-6 text-gray-300">Loading status...</div>
 				) : activeOA ? (
-					<>
-						{/* Timer (hardcoded) */}
-						<div className="p-4 bg-[#14141f] rounded-xl text-center">
-							<div className="text-sm text-gray-400">
-								Time Remaining
-							</div>
-							<div className="text-3xl font-mono text-emerald-400 mt-2">
-								{remaining}
-							</div>
-						</div>
-
-						{/* Questions list from response */}
-						<div className="p-4 bg-[#14141f] rounded-xl">
-							<h3 className="text-lg font-semibold text-white mb-3">
-								Questions
-							</h3>
-							<div className="space-y-3">
-								{(activeOA.questions || []).map((q, idx) => (
-									<div
-										key={q.id ?? q.question ?? idx}
-										className="flex items-center justify-between bg-[#1b1b29] p-3 rounded"
-									>
-										<div className="flex items-center gap-3">
-											{/* status tick */}
-											{q.status === "completed" ||
-											q.completedOn ? (
-												<div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-													<svg
-														xmlns="http://www.w3.org/2000/svg"
-														className="w-4 h-4 text-white"
-														viewBox="0 0 20 20"
-														fill="currentColor"
-													>
-														<path
-															fillRule="evenodd"
-															d="M16.704 5.29a1 1 0 010 1.42l-7.071 7.07a1 1 0 01-1.415 0l-3.536-3.536a1 1 0 111.415-1.415l2.828 2.828 6.364-6.364a1 1 0 011.415 0z"
-															clipRule="evenodd"
-														/>
-													</svg>
-												</div>
-											) : (
-												<div className="w-6 h-6 rounded-full border border-gray-600 flex items-center justify-center">
-													<div className="w-3 h-3 rounded-full bg-transparent" />
-												</div>
-											)}
-
-											<div>
-												<div className="text-sm text-gray-400">
-													Q{idx + 1}
-												</div>
-												<a
-													href={getQuestionUrl(q)}
-													target="_blank"
-													rel="noreferrer"
-													className={`font-medium ${
-														q.status ===
-															"completed" ||
-														q.completedOn
-															? "text-gray-400 line-through"
-															: "text-white hover:text-emerald-400"
-													} transition-colors duration-200`}
-												>
-													{q.title ??
-														q.slug ??
-														q.question?.title ??
-														`Question ${idx + 1}`}
-												</a>
-											</div>
-										</div>
-
-										<div>
-											<a
-												href={getQuestionUrl(q)}
-												target="_blank"
-												rel="noreferrer"
-												className="px-3 py-1 rounded bg-[#181825] hover:bg-[#1f1f2e] text-white text-sm transition-colors duration-200"
-											>
-												Open
-											</a>
-										</div>
-									</div>
-								))}
-							</div>
-						</div>
-
-						{/* Instructions */}
-						<div className="p-4 bg-[#14141f] rounded-xl">
-							<h4 className="text-sm text-gray-400">
-								Instructions
-							</h4>
-							<div className="mt-2 text-sm text-gray-300 border-t border-gray-700 pt-3">
-								<ul className="list-disc pl-5 space-y-1">
-									<li>
-										There are 4 questions: 1 Easy, 2 Medium,
-										1 Hard.
-									</li>
-									<li>
-										Total time: 90 minutes. Timer is shown
-										above (demo hardcoded).
-									</li>
-									<li>
-										Click "Open" to view the problem on
-										LeetCode. Mark completion in the OA
-										dashboard when done.
-									</li>
-									<li>
-										Do not refresh the page during a live OA
-										(demo behaviour may not persist state).
-									</li>
-								</ul>
-							</div>
-
-							<h1>EXTENSION JOIN</h1>
-						</div>
-					</>
+					activeOA.status === "ongoing" ? (
+						<OASession activeOA={activeOA} onEnd={() => window.location.reload()} />
+					) : (
+						<OAResults activeOA={activeOA} />
+					)
 				) : (
 					// No active OA: show only banner + instructions
 					<div className="p-4 bg-[#14141f] rounded-xl">
-						<h4 className="text-sm text-gray-400">Instructions</h4>
-						<div className="mt-2 text-sm text-gray-300 border-t border-gray-700 pt-3">
-							<ul className="list-disc pl-5 space-y-1">
-								<li>
-									There are 4 questions: 1 Easy, 2 Medium, 1
-									Hard.
-								</li>
-								<li>
-									Total time: 90 minutes. Timer will appear
-									when an OA is active.
-								</li>
-								<li>
-									Start OA from the banner to receive fresh
-									questions.
-								</li>
-								<li>
-									If you had an OA in progress, use the Join
-									button to resume (if available).
-								</li>
-							</ul>
+						<h4 className="text-sm text-gray-400 mb-3">Instructions</h4>
+						<div className="text-sm text-gray-300 space-y-3">
+							<div>
+								<h5 className="font-semibold text-white mb-2">📝 Aptitude Section (30 minutes)</h5>
+								<ul className="list-disc pl-5 space-y-1">
+									<li>25 multiple choice questions</li>
+									<li>Questions cover various topics (Quantitative, Logical, Verbal)</li>
+									<li>Auto-transitions to DSA section after 30 minutes</li>
+								</ul>
+							</div>
+							<div>
+								<h5 className="font-semibold text-white mb-2">💻 DSA Section (90 minutes)</h5>
+								<ul className="list-disc pl-5 space-y-1">
+									<li>4 coding questions: 1 Easy, 2 Medium, 1 Hard</li>
+									<li>Solve on LeetCode - extension tracks submissions</li>
+									<li>Total OA duration: 2 hours</li>
+								</ul>
+							</div>
 						</div>
 					</div>
 				)}

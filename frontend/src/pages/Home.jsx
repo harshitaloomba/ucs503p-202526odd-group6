@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import authService from "../services/Auth";
 import Loader from "../components/Loader";
 import Dashboard from "../components/Dashboard/Dashboard";
-import StudyPlans from "../components/StudyPlans/StudyPlans";
+import AptitudeDashboard from "../components/Dashboard/AptitudeDashboard";
 
 export default function Home() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("dsa"); // "dsa" or "aptitude"
 
   useEffect(() => {
     let isMounted = true;
@@ -41,9 +42,35 @@ export default function Home() {
   }
 
   return (
-    <>
-      <Dashboard />
-      <StudyPlans />
-    </>
+    <div className="bg-[#0f0f1c] min-h-screen">
+      {/* Toggle Button */}
+      <div className="flex justify-center pt-4 pb-1">
+        <div className="inline-flex rounded-full bg-[#1a1b2e] p-0.5 border border-[#2b2b3e]">
+          <button
+            onClick={() => setActiveTab("dsa")}
+            className={`px-6 py-1.5 rounded-full font-semibold text-sm transition-all duration-300 ${
+              activeTab === "dsa"
+                ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            DSA
+          </button>
+          <button
+            onClick={() => setActiveTab("aptitude")}
+            className={`px-6 py-1.5 rounded-full font-semibold text-sm transition-all duration-300 ${
+              activeTab === "aptitude"
+                ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            Aptitude
+          </button>
+        </div>
+      </div>
+
+      {/* Render Dashboard based on active tab */}
+      {activeTab === "dsa" ? <Dashboard /> : <AptitudeDashboard />}
+    </div>
   );
 }
