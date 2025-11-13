@@ -7,7 +7,8 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   "https://leetcode.com",
-  "https://ucs503p-202526odd-group6.vercel.app"
+  "https://ucs503p-202526odd-group6.vercel.app",
+  "https://ucs503p-202526odd-coderushers.vercel.app"
 ];
 
 app.use(

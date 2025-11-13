@@ -18,8 +18,8 @@ export default function OADashboard() {
     const fetchData = async () => {
       try {
         const [historyRes, statusRes] = await Promise.all([
-          API.get("/oa/history"),
-          API.get("/oa/status").catch(() => ({ status: 204 }))
+          API.get("/oa/history-h"),
+          API.get("/oa/status-h").catch(() => ({ status: 204 }))
         ]);
 
         console.log("History response:", historyRes.data);

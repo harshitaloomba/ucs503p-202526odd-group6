@@ -214,7 +214,7 @@ const endOA = asyncHandler(async (req, res) => {
 
 
 
-const getOAstatus = asyncHandler(async (req, res) => {
+const getOAstatusH = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const oa = await OA.findOne({ user: userId, status: "ongoing" })
     .populate("aptitudeQuestions.question")
@@ -299,6 +299,69 @@ const getOAstatus = asyncHandler(async (req, res) => {
     })
   );
 });
+
+const getOAstatusA = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+
+  const oa = await OA.findOne({ user: userId, status: "ongoing" })
+    .populate("dsaQuestions.question")
+    .lean();
+
+  if (!oa) {
+    return res.status(204).json({
+      success: true,
+      message: "No ongoing OA found for this user!"
+    });
+  }
+
+  const now = dayjs();
+
+  // Auto-abort if expired
+  if (now.isSameOrAfter(dayjs(oa.endedAt))) {
+    await OA.findByIdAndUpdate(oa._id, {
+      status: "aborted",
+      currentSection: "completed"
+    });
+
+    throw new ApiError(400, "The OA session has expired and been aborted.");
+  }
+
+  // DSA questions only
+  const dsaQuestions = (oa.dsaQuestions || []).map((q) => {
+    const qDoc = q.question;
+    return {
+      id: qDoc?._id,
+      title: qDoc?.title ?? null,
+      slug: qDoc?.slug ?? null,
+      status: q.status,
+      completedOn: q.completedOn ?? null,
+      url: qDoc?.slug
+        ? `https://leetcode.com/problems/${qDoc.slug}/`
+        : null
+    };
+  });
+
+  res.status(200).json(
+    new ApiResponse(
+      true,
+      "OA status retrieved successfully",
+      {
+        oaId: oa._id,
+        status: oa.status,
+        startedAt: oa.startedAt,
+        endsAt: oa.endedAt,
+        timeLimitMinutes: 90,
+
+        // FRONTEND EXPECTS: "questions"
+        questions: dsaQuestions,
+
+        totalDsaQuestions: dsaQuestions.length,
+        dsaCompletedCount: dsaQuestions.filter(q => q.status === "completed").length
+      }
+    )
+  );
+});
+
 
 const submitAptitudeAnswer = asyncHandler(async (req, res) => {
   const userId = req.user._id;
@@ -423,7 +486,7 @@ const deleteOA = asyncHandler(async (req, res) => {
 });
 
 
-const getOAhistory = asyncHandler(async (req, res) => {
+const getOAhistoryH = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
 
@@ -557,5 +620,128 @@ const getOAhistory = asyncHandler(async (req, res) => {
   );
 });
 
+const getOAhistoryA = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
 
-export { verifyExtension, createOA, getOAstatus, submitAptitudeSection, submitDsaSection, endOA, submitAptitudeAnswer, validateSubmission, deleteOA, getOAhistory };
+  const oas = await OA.find({
+    user: userId,
+    status: { $in: ["completed", "aborted"] }
+  })
+    .sort({ endedAt: -1, createdAt: -1 })
+    .limit(5)
+    .populate("dsaQuestions.question")
+    .lean();
+
+  const emptyAggregate = {
+    sessions: 0,
+    totalQuestions: 0,
+    totalCompleted: 0,
+    completionRatePercent: 0,
+    totalTimeMinutes: 0,
+    avgSessionDurationMinutes: 0
+  };
+
+  if (!oas || oas.length === 0) {
+    return res.status(200).json(
+      new ApiResponse(true, 200, "No OA history found", {
+        recent: [],
+        aggregate: emptyAggregate
+      })
+    );
+  }
+
+  const recent = [];
+  const agg = {
+    sessions: oas.length,
+    totalQuestions: 0,
+    totalCompleted: 0,
+    totalTimeMinutes: 0
+  };
+
+  for (const oa of oas) {
+    // duration calculation
+    let durationMinutes = null;
+    if (oa.startedAt && oa.endedAt) {
+      durationMinutes = Math.round(
+        (new Date(oa.endedAt) - new Date(oa.startedAt)) / 60000
+      );
+    } else if (oa.startedAt) {
+      durationMinutes = Math.round(
+        (Date.now() - new Date(oa.startedAt)) / 60000
+      );
+    }
+
+    // DSA only
+    const dsaQuestions = (oa.dsaQuestions || []).map((q) => {
+      const qDoc = q.question ?? null;
+      return {
+        id: qDoc?._id ?? q.question,
+        title: qDoc?.title ?? null,
+        slug: q.slug ?? qDoc?.slug ?? null,
+        status: q.status,
+        completedOn: q.completedOn ?? null,
+        url: qDoc?.slug
+          ? `https://leetcode.com/problems/${qDoc.slug}/`
+          : null
+      };
+    });
+
+    const totalQuestions = oa.totalDsaQuestions || dsaQuestions.length || 4;
+    const totalCompleted = oa.dsaCompletedCount || 0;
+
+    const sessionCompletionRate =
+      totalQuestions > 0
+        ? Math.round((totalCompleted / totalQuestions) * 100)
+        : 0;
+
+    agg.totalQuestions += totalQuestions;
+    agg.totalCompleted += totalCompleted;
+    if (durationMinutes) agg.totalTimeMinutes += durationMinutes;
+
+    recent.push({
+      oaId: oa._id,
+      status: oa.status,
+      startedAt: oa.startedAt,
+      endedAt: oa.endedAt,
+      durationMinutes,
+
+      // DSA ONLY
+      totalDsaQuestions: oa.totalDsaQuestions || 4,
+      dsaCompletedCount: oa.dsaCompletedCount || 0,
+
+      totalQuestions,
+      completedCount: totalCompleted,
+      completionRatePercent: sessionCompletionRate,
+
+      dsaQuestions,
+      createdAt: oa.createdAt,
+      updatedAt: oa.updatedAt
+    });
+  }
+
+  const aggregate = {
+    sessions: agg.sessions,
+    totalQuestions: agg.totalQuestions,
+    totalCompleted: agg.totalCompleted,
+    completionRatePercent:
+      agg.totalQuestions > 0
+        ? Math.round((agg.totalCompleted / agg.totalQuestions) * 100)
+        : 0,
+    totalTimeMinutes: agg.totalTimeMinutes,
+    avgSessionDurationMinutes:
+      agg.sessions > 0
+        ? Math.round(agg.totalTimeMinutes / agg.sessions)
+        : 0
+  };
+
+  return res.status(200).json(
+    new ApiResponse(
+      { recent, aggregate },
+      "Recent OA history retrieved",
+      200
+    )
+  );
+});
+
+
+export { verifyExtension, createOA, getOAstatusH, getOAstatusA, submitAptitudeSection, submitDsaSection, endOA, submitAptitudeAnswer, validateSubmission, deleteOA, getOAhistoryH,getOAhistoryA };

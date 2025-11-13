@@ -22,7 +22,7 @@ export default function PracticePage() {
 			setLoading(true);
 			setError(null);
 			try {
-				const res = await API.get("/oa/status", {
+				const res = await API.get("/oa/status-h", {
 					signal: controller.signal,
 				});
 				if (res.status === 204) {
@@ -69,7 +69,7 @@ export default function PracticePage() {
 				}
 			} catch (err) {
 				// If server returned HTML or 404, we fall back to no active OA
-				console.warn("Failed to load /oa/status", err);
+				console.warn("Failed to load /oa/status-h", err);
 				if (mounted) {
 					setActiveOA(null);
 					setError(err?.message || "Failed to fetch OA status");
