@@ -422,6 +422,8 @@ const submitAptitudeAnswer = asyncHandler(async (req, res) => {
 const validateSubmission = asyncHandler(async (req, res) => {
   const { username, qid, completed_on } = req.body;
 
+  console.log("Validating OA submission for user:", username, "Question ID:", qid);
+
   if (!username || !qid) {
     return res.status(400).json({ success: false, message: "Missing required fields." });
   }
@@ -459,6 +461,8 @@ const validateSubmission = asyncHandler(async (req, res) => {
   }
 
   await oa.save();
+
+  console.log("OA Submission validated for user:", username, "Question ID:", qid);
 
   res.json({
     success: true,
